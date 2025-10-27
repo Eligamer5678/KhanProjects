@@ -1,29 +1,13 @@
-// TitleScene: bootstrap and resource-loading scene for the game. Responsibilities:
-// - Preload images, sounds and music required by the game
-// - Present title UI and allow switching into gameplay scenes
-// - Provide a lightweight multiplayer-ready contract (sendState / applyRemoteState)
-//
-// Contract (high-level):
-// - Inputs: resources passed via onPreload/onSwitchFrom, input via mouse/keys
-// - Outputs: calls to Draw/UIDraw and optional server diffs via sendState
-// - Lifecycle: onPreload -> onReady -> onSwitchFrom/onSwitchTo
-//
-// Keep this scene lightweight: heavy simulation belongs in actual gameplay scenes.
 import Scene from './Scene.js';
 import Vector from '../js/Vector.js';
 import SoundManager from '../js/SoundManager.js'
 import MusicManager from '../js/MusicManager.js'
-import Color from '../js/Color.js';
-import UIButton from '../js/UI/Button.js';
-import UISlider from '../js/UI/Slider.js';
-import UIRect from '../js/UI/Rect.js';
-import UIImage from '../js/UI/Image.js';
-import Menu from '../js/UI/Menu.js';
-import { Dragon } from '../Game logic/sprites.js';
-import Geometry from '../js/Geometry.js';
 import LoadingOverlay from '../js/UI/LoadingOverlay.js';
 import createHButton from '../js/htmlElements/createHButton.js';
 import createHDiv from '../js/htmlElements/createHDiv.js';
+import Timer from '../js/Timer.js';
+
+import { BlockDodger } from '../Game logic/BlockDodger.js';
 
 export class TitleScene extends Scene {
     constructor(...args) {
@@ -32,6 +16,10 @@ export class TitleScene extends Scene {
         // Number of players expected in session (1 by default). Used by
         // multiplayer logic to decide whether to send/receive state.
         this.playerCount = 1;
+        this.tickCount = 0;       
+        this.tickRate = 42;       // this is 24 fps in milliseconds
+        this.tickAccumulator = 0; 
+        this.syncStep = 0;
         this.defaultSaveData = {
             'settings':{
                 'volume': {
@@ -157,6 +145,7 @@ export class TitleScene extends Scene {
      * Load music
      */
     async loadMusic(){
+        
         // Get music files
         const musicFiles = [
             //['intro', "Assets/sounds/music_intro.wav"],
@@ -165,6 +154,11 @@ export class TitleScene extends Scene {
             //['segue', "Assets/sounds/music_segue.wav"],
             //['part3', "Assets/sounds/music_part3.wav"]
         ];
+        if(musicFiles.length===0){
+            this.loaded += 1;
+            this._loadingOverlay && this._loadingOverlay.setProgress(0.9);
+            return;
+        }
         // Load music files
         let musicSkipped = false;
         for (const [key, path] of musicFiles) {
@@ -216,6 +210,7 @@ export class TitleScene extends Scene {
      * Load sounds
      */
     async loadSounds(){
+        
         // Loading sound effects
 
         // Just some example sound effects
@@ -225,7 +220,11 @@ export class TitleScene extends Scene {
             //['place', 'Assets/sounds/place.wav'],
             //['rotate', 'Assets/sounds/rotate.wav'],
         ];
-
+        if(sfx.length===0){
+            this.loaded += 1;
+            this._loadingOverlay && this._loadingOverlay.setProgress(0.5);
+            return;
+        }
         for (const [key, path] of sfx) {
             await this.soundGuy.loadSound(key, path);
             if (this._loadingOverlay) {
@@ -448,6 +447,7 @@ export class TitleScene extends Scene {
         this.twoPlayer = false;
         this.isReady = true;
         this.createUI()
+        this.createTimers()
         // Hide loading overlay now
 
         try {
@@ -458,6 +458,8 @@ export class TitleScene extends Scene {
         // Store a bound handler so we can safely disconnect it later.
         this._rssHandler = (state) => { this.applyRemoteState(state); };
         if (this.RSS && typeof this.RSS.connect === 'function') this.RSS.connect(this._rssHandler);
+
+        this.drawKhan = BlockDodger(this.Draw,this.mouse, this.keys,this.sessionTimer);
     }
 
     /**
@@ -475,6 +477,7 @@ export class TitleScene extends Scene {
     updateTimers(delta){
         if (this.paused) return;
         this.sessionTimer.update(delta);
+        console.log('hola')
     }
 
     /** 
@@ -583,7 +586,7 @@ export class TitleScene extends Scene {
         if(!this.isReady) return;
         this.Draw.background('#FFFFFF')
 
-
+        this.drawKhan.emit();
 
         this.UIDraw.useCtx('overlays')
         this.UIDraw.clear()

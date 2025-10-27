@@ -245,7 +245,7 @@ export default class Draw {
     }
 
     /** Note, If fill is set to gradient then use an array of colors */
-    rect(pos, size, color = '#000000FF', fill = true, width = 1, erase = false) {
+    rect(pos, size, color = '#000000FF', fill = true, stroke = false, width = 1, strokeColor = null, erase = false) {
         pos = this.pv(pos.clone());
         size = this.pv(size.clone());
         width = this.ps(width);
@@ -261,6 +261,12 @@ export default class Draw {
 
         ctx.save();
         ctx.globalCompositeOperation = erase ? 'destination-out' : 'source-over';
+
+        // Determine stroke behaviour while preserving backwards compatibility:
+        // - if caller provided `stroke` argument, use it
+        // - otherwise, if fill === false, behave like before and stroke
+        const strokeProvided = arguments.length >= 7; // stroke is 7th param
+
         // --- FILLED SOLID ---
         if (fill === true) {
             const col = Color.convertColor(erase ? '#000000FF' : color);
@@ -281,13 +287,16 @@ export default class Draw {
             });
             ctx.fillStyle = grad;
             ctx.fillRect(x, y, w, h);
-        // --- STROKED RECT ---
-        } else if (fill === false) {
-            const col = Color.convertColor(erase ? '#000000FF' : color);
-            ctx.strokeStyle = col.toHex();
+        }
+
+        // handle stroke if requested (either explicitly or for backwards compat)
+        if (stroke) {
+            const sc = Color.convertColor(strokeColor);
+            ctx.strokeStyle = sc.toHex();
             ctx.lineWidth = width;
             ctx.strokeRect(x, y, w, h);
         }
+
         ctx.restore();
     }
     
@@ -295,6 +304,71 @@ export default class Draw {
         const ctx = this._assertCtx('background');
         this.rect(new Vector(0, 0), new Vector(ctx.canvas.width / this.Scale.x, ctx.canvas.height / this.Scale.y), color, true);
     }
+
+    /**
+     * Draw an ellipse. `pos` is center, `size` is [width, height] (in same units as rect).
+     * Options: color, fill (true|'gradient'|false), stroke(boolean), strokeColor, width, erase
+     */
+    ellipse(pos, size, color = '#000000FF', fill = true, stroke = false, width = 1, strokeColor = null, erase = false) {
+        pos = this.pv(pos.clone());
+        size = this.pv(size.clone());
+        width = this.ps(width);
+        const ctx = this._assertCtx('ellipse');
+        const { x, y } = _asVec(pos);
+        const { x: w, y: h } = _asVec(size);
+        const rx = w / 2;
+        const ry = h / 2;
+
+        // If erase and color === null, clear bounding box
+        if (erase && color === null) {
+            ctx.clearRect(x - rx, y - ry, w, h);
+            return;
+        }
+
+        ctx.save();
+        ctx.globalCompositeOperation = erase ? 'destination-out' : 'source-over';
+
+        // gradient fill support (simple horizontal gradient)
+        if (fill === 'gradient') {
+            if (!Array.isArray(color)) {
+                debug.log("Gradient fill requires an array of at least 2 colors");
+                ctx.restore();
+                return;
+            }
+            const grad = ctx.createLinearGradient(x - rx, y, x + rx, y);
+            const stops = color.length;
+            color.forEach((c, i) => {
+                const col = Color.convertColor(c);
+                grad.addColorStop(i / (stops - 1), col.toHex());
+            });
+            ctx.beginPath();
+            ctx.ellipse(x, y, this.ps(rx), this.ps(ry), 0, 0, Math.PI * 2);
+            ctx.fillStyle = grad;
+            ctx.fill();
+        } else {
+            const col = Color.convertColor(erase ? '#000000FF' : color);
+            ctx.beginPath();
+            ctx.ellipse(x, y, this.ps(rx), this.ps(ry), 0, 0, Math.PI * 2);
+            if (fill) {
+                ctx.globalAlpha = col.d;
+                ctx.fillStyle = col.toHex();
+                ctx.fill();
+            }
+            // stroke handling: if stroke === true or fill === false (backwards compat), stroke
+            const strokeProvided = arguments.length >= 5; // stroke is 5th param
+            const doStroke = strokeProvided ? !!stroke : (fill === false);
+            if (doStroke) {
+                const strokeColRaw = (arguments.length >= 6 && strokeColor != null) ? strokeColor : color;
+                const sc = Color.convertColor(erase ? '#000000FF' : strokeColRaw);
+                ctx.strokeStyle = sc.toHex();
+                ctx.lineWidth = width;
+                ctx.stroke();
+            }
+        }
+
+        ctx.restore();
+    }
+        
 
 
     polygon(points, color = '#000000FF', width = 1, fill = false, erase = false) {
@@ -306,10 +380,10 @@ export default class Draw {
         const col = Color.convertColor(erase ? '#000000FF' : color);
         ctx.beginPath();
         const p0 = _asVec(points[0]);
-        ctx.moveTo(px(p0.x), this.py(p0.y));
+        ctx.moveTo(this.px(p0.x), this.py(p0.y));
         for (let i = 1; i < points.length; i++) {
             const p = _asVec(points[i]);
-            ctx.lineTo(px(p.x), this.py(p.y));
+            ctx.lineTo(this.px(p.x), this.py(p.y));
         }
         ctx.closePath();
         if (fill) {
