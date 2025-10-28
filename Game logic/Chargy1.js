@@ -1,3 +1,216 @@
+import Vector from '../js/Vector.js';
+import Signal from '../js/Signal.js';
+import Color from '../js/Color.js';
+import { mainHeight} from '../settings.js';
+import { mainWidth } from '../settings.js';
+
+class PVector extends Vector{
+    constructor(x,y){
+        super(x,y)
+    }
+    // override clone so that cloning a PVector preserves the subclass
+
+    get(){
+        return new PVector(this.x, this.y);
+    }
+    add(v){
+        this.addS(v)
+    }
+    sub(v){
+        this.subS(v)
+    }
+    mult(v){
+        this.multS(v)
+    }
+    div(v){
+        this.divS(v)
+    }
+    dist(v){
+        return this.distanceTo(v)
+    }
+}
+export function Chargy(DrawRef, MouseRef, KeysRef, sessionTimer){
+    // Khan-like functions
+    let globalfillColor = color(255,255,255,1,'rgb');
+    let globalStrokeColor = color(0,0,0,'1','rgb');
+    let globalStroke = 2;
+    let globalTextSize = 12;
+    let CENTER = 'center'
+    let TOPLEFT = 'topleft'
+    let CORNER = 'topleft'
+    let globalRectMode = TOPLEFT
+
+function rectMode(value){
+    globalRectMode = value
+}
+    
+function frameRate(rate){
+    // do nothing lol
+}
+function color(r,g,b,a=1){
+    if(a>1){a=1}
+    if(a<0){a=0}
+    return new Color(r,g,b,a,'rgb');
+}
+function rect(x3,y3,w,h,d=0){
+    let x;
+    let y;
+    let r = d/2
+    if(globalRectMode === CENTER){
+        x=   x3-w/2
+        y =  y3-h/2
+    }else{
+        x=x3
+        y=y3
+    }
+    if(r==0){
+        DrawRef.rect(new Vector(x,y),new Vector(w,h), globalfillColor, true, true, globalStroke, globalStrokeColor);
+        return;
+    }
+    let rad = Math.min(r, w, h);//ensures radius isn't bigger than width or height
+    DrawRef.rect(new Vector(x,y+rad),new Vector(w,h-rad*2), globalfillColor, true, true, globalStroke, globalStrokeColor);
+    DrawRef.rect(new Vector(x+rad,y),new Vector(w-rad*2,h), globalfillColor, true, true, globalStroke, globalStrokeColor);
+    DrawRef.ellipse(new Vector(x+rad,y+rad), new Vector(rad*2,rad*2), globalfillColor, true, true, globalStroke, globalStrokeColor);
+    DrawRef.ellipse(new Vector(x+w-rad,y+rad), new Vector(rad*2,rad*2), globalfillColor, true, true, globalStroke, globalStrokeColor);
+    DrawRef.ellipse(new Vector(x+w-rad,y+h-rad), new Vector(rad*2,rad*2), globalfillColor, true, true, globalStroke, globalStrokeColor);
+    DrawRef.ellipse(new Vector(x+rad,y+h-rad), new Vector(rad*2,rad*2), globalfillColor, true, true, globalStroke, globalStrokeColor);
+
+    DrawRef.rect(new Vector(x+globalStroke/2,y+rad),new Vector(w-globalStroke,h-rad*2), globalfillColor, true, false, globalStroke, globalStrokeColor);
+    DrawRef.rect(new Vector(x+rad-globalStroke/2,y+globalStroke/2),new Vector(w-rad*2,h-globalStroke), globalfillColor, true, false, globalStroke, globalStrokeColor);
+    DrawRef.ellipse(new Vector(x+rad+globalStroke/2,y+rad+globalStroke/2), new Vector(rad*2,rad*2), globalfillColor, true, false, globalStroke, globalStrokeColor);
+    DrawRef.ellipse(new Vector(x+w-rad-globalStroke/2,y+rad+globalStroke/2), new Vector(rad*2,rad*2), globalfillColor, true, false, globalStroke, globalStrokeColor);
+    DrawRef.ellipse(new Vector(x+w-rad-globalStroke/2,y+h-rad-globalStroke/2), new Vector(rad*2,rad*2), globalfillColor, true, false, globalStroke, globalStrokeColor);
+    DrawRef.ellipse(new Vector(x+rad+globalStroke/2,y+h-rad-globalStroke/2), new Vector(rad*2,rad*2), globalfillColor, true, false, globalStroke, globalStrokeColor);
+}
+function ellipse(x,y,w,h){
+    DrawRef.ellipse(new Vector(x,y), new Vector(w,h), globalfillColor, true, true, globalStroke, globalStrokeColor);
+}
+function millis(){
+    return sessionTimer.getTime()*1000;
+}
+let width = mainWidth;
+let height = mainHeight;
+function background(r,g,b,a=1){
+    DrawRef.background(color(r,g,b,a,'rgb'));
+}
+function fill(r,g,b,a=100){
+    globalfillColor = color(r,g,b,a/100,'rgb');
+}
+function stroke(r,g,b,a=1){
+    globalStrokeColor = color(r,g,b,a,'rgb');
+}
+function strokeWeight(v){
+    globalStroke = v
+}
+function noStroke(){
+    globalStroke = 0;
+}
+
+function text(str,x,y,w,h){
+    // Support optional bounding box: text(str, x, y, w, h)
+    if (typeof w !== 'undefined' && typeof h !== 'undefined') {
+        DrawRef.text(str, new Vector(x,y), globalfillColor, 1, globalTextSize, { box: new Vector(w,h), wrap: 'word' });
+    } else {
+        DrawRef.text(str, new Vector(x,y), globalfillColor, 1, globalTextSize);
+    }
+}
+function textSize(size){
+    globalTextSize = size;
+}
+function round(num){
+    return Math.round(num);
+}
+function noLoop(){
+    //do nothing
+}
+function dist(x1,y1,x2,y2){
+    let dx = x2 - x1;
+    let dy = y2 - y1;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+function line(x1,y1,x2,y2){
+    DrawRef.line(new Vector(x1,y1), new Vector(x2,y2), globalStrokeColor, globalStroke)
+}
+function random(start=0,end=1){
+    return Math.random()*(end-start)+start
+}
+function pushMatrix(){
+    DrawRef.pushMatrix();
+}
+function translate(x,y){
+    DrawRef.translate(new Vector(x,y));
+}
+function scale(sx,sy=sx){
+    DrawRef.scale(new Vector(sx,sy));
+}
+function rotate(angle){
+    DrawRef.rotate(angle);
+}
+function popMatrix(){
+    DrawRef.popMatrix(true,true);
+}
+function arc(x,y,w,h,start,stop){
+    DrawRef.arc(new Vector(x,y), new Vector(w,h), start, stop, globalfillColor, true, true, globalStroke, globalStrokeColor);
+}
+
+let globalShape = []; // store vector coords here
+function beginShape(){
+    globalShape = [];
+}
+function vertex(x,y){
+    globalShape.push(new Vector(x,y));
+}
+function endShape(close=false){
+    DrawRef.polygon(globalShape, globalfillColor, true, true, globalStroke, globalStrokeColor);
+    if(close){
+        DrawRef.line(globalShape[0], globalShape[globalShape.length-1], globalStrokeColor, globalStroke);
+    }
+    globalShape = [];
+}
+
+
+// Dummy functions
+function mouseClicked(){} //dummy
+function draw(){} //dummy
+function keyReleased(){} //dummy
+function mouseReleased(){} //dummy
+
+
+
+// Warning: keyCode = VALUE will need to be replaced with KeysRef.pressed('keyname')
+// replace 'var' with 'let' or 'const' as needed
+// Example: var click = 0;  --> let click = 0;
+
+// Redeclare these as the other
+let mouseX = MouseRef.pos.x;
+let mouseY = MouseRef.pos.y;
+// Replace keyIsPressed,keyCode='name' with KeysRef.held('keyname')
+// and keyPressed with keyPressed()
+function keyPressed(){
+    return KeysRef.held('any')
+}
+function cursor(){
+    //do nothing
+}
+function textFont(...args){
+    //do nothing
+}
+function createFont(...args){
+    //do nothing
+}
+function triangle(x1,y1,x2,y2,x3,y3){
+    DrawRef.polygon([new Vector(x1,y1),new Vector(x2,y2),new Vector(x3,y3)], globalfillColor, true, true, globalStroke, globalStrokeColor);
+}
+//blackout screen areas - paste at end of draw()
+DrawRef.rect(new Vector(width,0), new Vector(mainWidth-width,height+2), color(0,0,0,1,'rgb'), true); //blackout right side
+DrawRef.rect(new Vector(-1,height), new Vector(mainWidth+2,mainHeight-height+1), color(0,0,0,1,'rgb'), true); //blackout bottom
+
+// Paste code below this line to use!
+
+
+
+/**Break*/
+
 /*For teachers seeing this, please remember i made this myself and will only update it in free time.
 
 
@@ -54,8 +267,8 @@ var kc = false;
 var keys=[];
 var key_held = 0;
 var elitime = 0;
-keyPressed=function(){keys[keyCode]=true;kc=true;key_held+=1;};
-keyReleased=function(){keys[keyCode]=false;key_held=0;};
+keyPressed=function(){keys[0]=true;kc=true;key_held+=1;};
+keyReleased=function(){keys[0]=false;key_held=0;};
 {
 var devmode = false;
 }
@@ -304,13 +517,13 @@ noStroke();
 var flight_orb = function(x,y,on){
     noStroke();
 if(on===true){
-for(var i = 30;i>1;i--){
+for(let i = 30;i>1;i--){
 fill(cor,i-5);
 ellipse(x,y+heightY,i,i);
 }
 }
 if(on===false){
-for(var i = 30;i>1;i--){
+for(let i = 30;i>1;i--){
 fill(255, 0, 0,i-5);
 ellipse(x,y+heightY,i,i);
 }
@@ -469,10 +682,10 @@ if(X+30>x&&X<x+w&&Y+30>y+heightY&&Y<y+heightY+h&&d===2){
     sx=0;
     sy*=0.85;
     g=0;
-    if(keys[UP]){
+    if(KeysRef.held('ArrowUp')){
         sy-=1;
     }
-    if(keys[DOWN]){sy+=0.85;}
+    if(KeysRef.held('ArrowDown')){sy+=0.85;}
 }
 if(X2+30>x&&X2<x+w&&Y2+30>y+heightY&&Y2<y+heightY+h&&d===2){
     X2=x+w/2-15;
@@ -491,14 +704,14 @@ fill(59, 25, 0);
 rect(x,y+heightY+h/3,w,h/3);
 if(X+30>x&&X<x+w&&Y+30>y+heightY&&Y<y+heightY+h){
 sy=0;
-if(keys[UP]){
+if(KeysRef.held('ArrowUp')){
 Y-=5;
 }
-if(keys[DOWN]){Y+=5;}
-if(keys[RIGHT]){
+if(KeysRef.held('ArrowDown')){Y+=5;}
+if(KeysRef.held('ArrowRight')){
 X+=5;
 }
-if(keys[LEFT]){X-=5;} 
+if(KeysRef.held('ArrowLeft')){X-=5;} 
 }
 }
 }
@@ -520,10 +733,10 @@ if(X+30>x&&X<x+w&&Y+30>y+heightY&&Y<y+heightY+h&&d===2){
     X=x+w/2-15;
     sx=0;
     sy=0;
-    if(keys[UP]){
+    if(KeysRef.held('ArrowUp')){
         Y-=5;
     }
-    if(keys[DOWN]){Y+=5;}
+    if(KeysRef.held('ArrowDown')){Y+=5;}
 }
 }
 if(d===3){
@@ -534,14 +747,14 @@ rect(x,y+heightY+h/3,w,h/3);
 if(X+30>x&&X<x+w&&Y+30>y+heightY&&Y<y+heightY+h){
 sx=0;
 sy=0;
-if(keys[UP]){
+if(KeysRef.held('ArrowUp')){
 Y-=5;
 }
-if(keys[DOWN]){Y+=5;}
-if(keys[RIGHT]){
+if(KeysRef.held('ArrowDown')){Y+=5;}
+if(KeysRef.held('ArrowRight')){
 X+=5;
 }
-if(keys[LEFT]){X-=5;} 
+if(KeysRef.held('ArrowLeft')){X-=5;} 
 }
 }
 }
@@ -1213,7 +1426,7 @@ if(colide===true){
 if(X+sx+30>=x&&X<=x&&Y+29>y+heightY&&Y+1<y+heightY+h){
     X=x-30;
     sx=0;
-    if(keys[UP]&&d===4){
+    if(('ArrowUp')&&d===4){
         sy=-10;
         sx=-15;
     }
@@ -1221,7 +1434,7 @@ if(X+sx+30>=x&&X<=x&&Y+29>y+heightY&&Y+1<y+heightY+h){
 if(X+sx<=x+w&&X+30>=x+w&&Y+29>y+heightY&&Y+1<y+heightY+h){
     X=x+w;
     sx=0;
-    if(keys[UP]&&d===2){
+    if(KeysRef.held('ArrowUp')&&d===2){
         sy=-10;
         sx=15;
     }
@@ -1398,7 +1611,7 @@ var phone = function(x,y){
     strokeWeight(1);
 //glow    {
 noStroke();
-for(var a = 40;a>1;a--){
+for(let a = 40;a>1;a--){
 fill(255,255,200,a-20);
 ellipse(x+8,y+heightY+15,a,a);
 }
@@ -1456,7 +1669,7 @@ swichlvl('exit',1);
 var bphone = function(x,y,part){
 noStroke();
 if(part===1){
-    for(var a = 40;a>1;a--){
+    for(let a = 40;a>1;a--){
     fill(255,0,0,a-20);
     ellipse(x+8,y+heightY+15,a,a);
     }
@@ -1476,7 +1689,7 @@ fill(0, 255, 51);
 rect(x+2.5,y+2+heightY,10,25);
 }
 if(part===2){
-    for(var a = 40;a>1;a--){
+    for(let a = 40;a>1;a--){
     fill(255,85,0,a-20);
     ellipse(x+8,y+heightY+15,a,a);
     }
@@ -1496,7 +1709,7 @@ fill(0, 255, 51);
 rect(x+2.5,y+2+heightY,10,25);
 }
 if(part===3){
-    for(var a = 40;a>1;a--){
+    for(let a = 40;a>1;a--){
     fill(230,255,0,a-20);
     ellipse(x+8,y+heightY+15,a,a);
     }
@@ -1513,7 +1726,7 @@ fill(0, 255, 51);
 rect(x+2.5,y+2+heightY,10,25);
 }
 if(part===4){
-    for(var a = 40;a>1;a--){
+    for(let a = 40;a>1;a--){
     fill(17,255,0,a-20);
     ellipse(x+8,y+heightY+15,a,a);
     }
@@ -1618,7 +1831,7 @@ var level_entrance = function(x,y,lev,extra){
     stroke(0,0,0);
     fill(0,0,0,0);
     stroke(0,0,0,0);
-for(var i = 0; i<50;i++){
+for(let i = 0; i<50;i++){
 fill(0,0,0,i);
 if(lev==='Supreme'){
     fill(i*2,0,0,i);
@@ -1724,7 +1937,7 @@ block(-10,-10,20,420,1);
 block(590,-10,20,420,1);
 if(dark===true){
     
-for(var i = 0;i<255;i+=8){
+for(let i = 0;i<255;i+=8){
     fill(255,255,225,255-i*1.1);
 ellipse(520,110,i*0.5,i*0.5);
 }
@@ -1744,7 +1957,7 @@ popMatrix();
 fill(20, 0, 0,100); 
 }
 if(effects==="on"){
-for(var i = 0; i < snowsy.length-1;i++){
+for(let i = 0; i < snowsy.length-1;i++){
 if(snowsy[i]>400){
 snowsy[i] = 0;
 snowfallsy[i]=random(0.5,1);
@@ -1754,7 +1967,7 @@ snowsx[i] = random(0,600);
 }
 }
 snowsy[i]+=snowfallsy[i];
-for(var j = 0;j<snowsx.length;j++){
+for(let j = 0;j<snowsx.length;j++){
 fill(255,255,255,100);
 ellipse(j*50+snowsx[i],snowsy[i],20,20);
 fill(255,255,255,150);
@@ -1766,7 +1979,7 @@ fill(0, 153, 255,100);
 if(dark===true){
     fill(20,0,0,200);
     
-for(var i = 200;i>0;i--){
+for(let i = 200;i>0;i--){
     fill(0,0,0,i);
     rect(0,0-i+210,600,2);
 }
@@ -2354,7 +2567,7 @@ if(X+sx<=x+w&&X+30>=x+w&&Y+29>y+heightY&&Y+1<y+heightY+h&&X>x-2+w){
 
 
 if(X-1<x+w){
-for(var a = h;a>0;a--){
+for(let a = h;a>0;a--){
     var y1 = y+a;
     var x1 = x+-a*(w/h)+w;
     var o1 = h;
@@ -2388,7 +2601,7 @@ if(X+sx+30>=x&&X<=x&&Y+29>y+heightY&&Y+1<y+heightY+h&&X+30<x+1){
 
 
 if(X+31>x){
-for(var a = h;a>0;a--){
+for(let a = h;a>0;a--){
     var y1 = y+a;
     var x1 = x+a*(w/h);
     var o1 = h;
@@ -2412,20 +2625,20 @@ for(var a = h;a>0;a--){
 
 
 if(d===3){
-for(var a = w;a>0;a-=2){
+for(let a = w;a>0;a-=2){
     var a2 = 0;
     var b2 = 0;
-for(var b= 0;b<h;b++){
+for(let b= 0;b<h;b++){
     a2=a;
     b2=-(0+a/(w/h));
 }
 block(x,y+b2+h,a2,2);
 }}
 if(d===4){
-for(var a = 0;a<w;a+=2){
+for(let a = 0;a<w;a+=2){
     var a2 = 0;
     var b2 = 0;
-for(var b= 0;b<h;b++){
+for(let b= 0;b<h;b++){
     a2=a;
     b2=-(0+a/(w/h));
 }
@@ -2564,13 +2777,13 @@ canY = y-mouseY;
 if(mouseY<y+50){
 if(mouseX<x){
 aim = atan(canY/canX)-90;
-if(mouseIsPressed){
+if(MouseRef.held('left')){
     cantime=1;
 }
 }
 if(mouseX>x){
 aim = atan(canY/canX)+90;
-if(mouseIsPressed){
+if(MouseRef.held('left')){
     cantime=1;
 }
 }
@@ -2597,14 +2810,14 @@ fill(120, 203, 255);
 rect(x,y,w,h);
 if(colide===true){
 if(X+sx+30>=x&&X<=x&&Y+29>y+heightY&&Y+1<y+heightY+h){
-    if(abs(sx)>20&&keys[RIGHT]){
+    if(abs(sx)>20&&KeysRef.held('ArrowRight')){
     sy=-30;
     }
     X=x-30;
     sx=0;
 }
 if(X+sx<=x+w&&X+30>=x+w&&Y+29>y+heightY&&Y+1<y+heightY+h){
-    if(abs(sx)>20&&keys[RIGHT]){
+    if(abs(sx)>20&&KeysRef.held('ArrowRight')){
     sy=-30;
     }
     X=x+w;
@@ -2649,7 +2862,7 @@ if(crown === 200){
 sy-=0.5;
 }
 if(crown === 300){
-if(keys[UP]&&jump===false&&jt>0){
+if(KeysRef.held('ArrowUp')&&jump===false&&jt>0){
 sy-=15;
 jt=0;
 jump=true;
@@ -2662,6 +2875,48 @@ if(crown === 500){
 sy-=0.5;
 }
 }
+};
+mouseClicked = function(){
+    if(crown>=4&&keys[32]){
+        if(dist(mouseX,mouseY,X+15,Y+15)<100){
+        X=mouseX-15;Y=mouseY-15;
+        }
+    }
+if(crown===2){
+    if(mouseX<75&&mouseY<25){
+        frames+=10;
+    }
+    if(mouseX<75&&mouseY<50){
+        frames-=5;
+    }
+}
+if(mouseX>560&&mouseY<40&&settings_open===0){
+settings_open=1;
+}
+if(lvl===0&&mouseX>177&&mouseX<177+240&&mouseY>178&&mouseY<178+55&&settings_open===0){
+    levels_complete = saves[0];
+    supreme_levels_complete = saves[1];
+    crown = saves[2];
+    cx = saves[3];
+    deaths = saves[4];
+    t_complete = saves[5];
+    X=saves[6];
+    Y=saves[7];
+    heightY=saves[8];
+    lvl=saves[9];
+    flight=saves[10];
+    keyscollected=saves[11];
+    battery=saves[12];
+    swichlvl('enter',1);
+}
+if(settings_open&&mouseX<250&&mouseY<50){
+if(effects === "on"){
+effects="off";
+}else{
+effects = "on";
+}
+}
+
 };
 draw = function() {
     start_game_rotate_amoumt +=1;
@@ -2706,7 +2961,7 @@ draw = function() {
     sy*=0.95;
     }
     }
-    if(keys[UP]&&jump===false&&jt>0||keys[UP]&&flight===true){
+    if(KeysRef.held('ArrowUp')&&jump===false&&jt>0||KeysRef.held('ArrowUp')&&flight===true){
         if(flight===false){
         if(keys[32]&&crown===3){
             sy=-7;
@@ -2719,13 +2974,13 @@ draw = function() {
         }
     }
     jt-=1;
-    if(keys[RIGHT]){
+    if(KeysRef.held('ArrowRight')){
         sx+=1;
     }
-    if(keys[LEFT]){
+    if(KeysRef.held('ArrowLeft')){
         sx-=1;
     }
-    if(keys[DOWN]){
+    if(KeysRef.held('ArrowDown')){
         if(flight===true){
             sy+=1;
         }
@@ -2806,49 +3061,49 @@ draw = function() {
      block(0,390,600,10,8);
     fill(100, 0, 0);
     ellipse(200,95,30,30);
-    if(dist(mouseX,mouseY,200,95)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,200,95)<15&&MouseRef.held('left')){
         cor2 = color(100, 0, 0);
         flight=false;
     }
     fill(150, 50, 0);
     ellipse(250,95,30,30);
-    if(dist(mouseX,mouseY,250,95)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,250,95)<15&&MouseRef.held('left')){
         cor2 = color(150, 50, 0);
         flight=false;
     }
     fill(100, 50, 0);
     ellipse(300,95,30,30);
-    if(dist(mouseX,mouseY,300,95)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,300,95)<15&&MouseRef.held('left')){
         cor2 = color(100, 50, 0);
         flight=false;
     }
     fill(0, 100, 0);
     ellipse(350,95,30,30);
-    if(dist(mouseX,mouseY,350,95)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,350,95)<15&&MouseRef.held('left')){
         cor2 = color(0, 100, 0);
         flight=false;
     }
     fill(0, 0, 100);
     ellipse(400,95,30,30);
-    if(dist(mouseX,mouseY,400,95)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,400,95)<15&&MouseRef.held('left')){
         cor2 = color(0, 0, 100);
         flight=false;
     }
     fill(100, 0, 100);
     ellipse(450,95,30,30);
-    if(dist(mouseX,mouseY,450,95)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,450,95)<15&&MouseRef.held('left')){
         cor2 = color(100, 0, 100);
         flight=false;
     }
     fill(255, 255, 255);
     ellipse(500,95,30,30);
-    if(dist(mouseX,mouseY,500,95)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,500,95)<15&&MouseRef.held('left')){
         cor2 = color(255, 255, 255);
         flight=false;
     }
     fill(0, 0, 0);
     ellipse(550,95,30,30);
-    if(dist(mouseX,mouseY,550,95)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,550,95)<15&&MouseRef.held('left')){
         cor2 = color(0, 0, 0);
         flight=false;
     }
@@ -2856,49 +3111,49 @@ draw = function() {
     
     fill(255, 0, 0);
     ellipse(200,145,30,30);
-    if(dist(mouseX,mouseY,200,145)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,200,145)<15&&MouseRef.held('left')){
         cor = color(255, 0, 0);
         flight=true;
     }
     fill(255, 100, 0);
     ellipse(250,145,30,30);
-    if(dist(mouseX,mouseY,250,145)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,250,145)<15&&MouseRef.held('left')){
         cor = color(255, 100, 0);
         flight=true;
     }
     fill(255, 255, 0);
     ellipse(300,145,30,30);
-    if(dist(mouseX,mouseY,300,145)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,300,145)<15&&MouseRef.held('left')){
         cor = color(255, 255, 0);
         flight=true;
     }
     fill(10, 180, 0);
     ellipse(350,145,30,30);
-    if(dist(mouseX,mouseY,350,145)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,350,145)<15&&MouseRef.held('left')){
         cor = color(10, 180, 0);
         flight=true;
     }
     fill(0, 200, 255);
     ellipse(400,145,30,30);
-    if(dist(mouseX,mouseY,400,145)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,400,145)<15&&MouseRef.held('left')){
         cor = color(0, 200, 255);
         flight=true;
     }
     fill(255, 0, 255);
     ellipse(450,145,30,30);
-    if(dist(mouseX,mouseY,450,145)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,450,145)<15&&MouseRef.held('left')){
         cor = color(255, 0, 255);
         flight=true;
     }
     fill(255, 255, 255);
     ellipse(500,145,30,30);
-    if(dist(mouseX,mouseY,500,145)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,500,145)<15&&MouseRef.held('left')){
         cor = color(255, 255, 255);
         flight=true;
     }
     fill(0, 0, 0);
     ellipse(550,145,30,30);
-    if(dist(mouseX,mouseY,550,145)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,550,145)<15&&MouseRef.held('left')){
         cor = color(0, 0, 0);
         flight=true;
     }
@@ -2907,49 +3162,49 @@ draw = function() {
     
     fill(255, 0, 0);
     ellipse(200,195,30,30);
-    if(dist(mouseX,mouseY,200,195)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,200,195)<15&&MouseRef.held('left')){
         cor3 = color(255, 0, 0);
         flight=false;
     }
     fill(255, 100, 0);
     ellipse(250,195,30,30);
-    if(dist(mouseX,mouseY,250,195)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,250,195)<15&&MouseRef.held('left')){
         cor3 = color(255, 100, 0);
         flight=false;
     }
     fill(255, 255, 0);
     ellipse(300,195,30,30);
-    if(dist(mouseX,mouseY,300,195)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,300,195)<15&&MouseRef.held('left')){
         cor3 = color(255, 255, 0);
         flight=false;
     }
     fill(0, 180, 0);
     ellipse(350,195,30,30);
-    if(dist(mouseX,mouseY,350,195)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,350,195)<15&&MouseRef.held('left')){
         cor3 = color(0, 180, 0);
         flight=false;
     }
     fill(0, 200, 255);
     ellipse(400,195,30,30);
-    if(dist(mouseX,mouseY,400,195)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,400,195)<15&&MouseRef.held('left')){
         cor3 = color(0, 200, 255);
         flight=false;
     }
     fill(255, 0, 255);
     ellipse(450,195,30,30);
-    if(dist(mouseX,mouseY,450,195)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,450,195)<15&&MouseRef.held('left')){
         cor3 = color(255, 0, 255);
         flight=false;
     }
     fill(255, 255, 255);
     ellipse(500,195,30,30);
-    if(dist(mouseX,mouseY,500,195)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,500,195)<15&&MouseRef.held('left')){
         cor3 = color(255, 255, 255);
         flight=false;
     }
     fill(0, 0, 0);
     ellipse(550,195,30,30);
-    if(dist(mouseX,mouseY,550,195)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,550,195)<15&&MouseRef.held('left')){
         cor3 = color(0, 0, 0);
         flight=false;
     }
@@ -2958,49 +3213,49 @@ draw = function() {
     
     fill(255, 0, 0);
     ellipse(200,245,30,30);
-    if(dist(mouseX,mouseY,200,245)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,200,245)<15&&MouseRef.held('left')){
         cor4 = color(255, 0, 0);
         flight=false;
     }
     fill(255, 100, 0);
     ellipse(250,245,30,30);
-    if(dist(mouseX,mouseY,250,245)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,250,245)<15&&MouseRef.held('left')){
         cor4 = color(255, 100, 0);
         flight=false;
     }
     fill(255, 255, 0);
     ellipse(300,245,30,30);
-    if(dist(mouseX,mouseY,300,245)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,300,245)<15&&MouseRef.held('left')){
         cor4 = color(255, 255, 0);
         flight=false;
     }
     fill(0, 180, 0);
     ellipse(350,245,30,30);
-    if(dist(mouseX,mouseY,350,245)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,350,245)<15&&MouseRef.held('left')){
         cor4 = color(0, 180, 0);
         flight=false;
     }
     fill(0, 200, 255);
     ellipse(400,245,30,30);
-    if(dist(mouseX,mouseY,400,245)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,400,245)<15&&MouseRef.held('left')){
         cor4 = color(0, 200, 255);
         flight=false;
     }
     fill(255, 0, 255);
     ellipse(450,245,30,30);
-    if(dist(mouseX,mouseY,450,245)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,450,245)<15&&MouseRef.held('left')){
         cor4 = color(255, 0, 255);
         flight=false;
     }
     fill(255, 255, 255);
     ellipse(500,245,30,30);
-    if(dist(mouseX,mouseY,500,245)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,500,245)<15&&MouseRef.held('left')){
         cor4 = color(255, 255, 255);
         flight=false;
     }
     fill(0, 0, 0);
     ellipse(550,245,30,30);
-    if(dist(mouseX,mouseY,550,245)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,550,245)<15&&MouseRef.held('left')){
         cor4 = color(0, 0, 0);
         flight=false;
     }
@@ -3009,49 +3264,49 @@ draw = function() {
     
     fill(100, 0, 0);
     ellipse(200,295,30,30);
-    if(dist(mouseX,mouseY,200,295)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,200,295)<15&&MouseRef.held('left')){
         cor5 = color(100, 0, 0);
         flight=false;
     }
     fill(150, 50, 0);
     ellipse(250,295,30,30);
-    if(dist(mouseX,mouseY,250,295)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,250,295)<15&&MouseRef.held('left')){
         cor5 = color(150, 50, 0);
         flight=false;
     }
     fill(100, 50, 0);
     ellipse(300,295,30,30);
-    if(dist(mouseX,mouseY,300,295)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,300,295)<15&&MouseRef.held('left')){
         cor5 = color(100, 50, 0);
         flight=false;
     }
     fill(0, 100, 0);
     ellipse(350,295,30,30);
-    if(dist(mouseX,mouseY,350,295)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,350,295)<15&&MouseRef.held('left')){
         cor5 = color(0, 100, 0);
         flight=false;
     }
     fill(0, 0, 100);
     ellipse(400,295,30,30);
-    if(dist(mouseX,mouseY,400,295)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,400,295)<15&&MouseRef.held('left')){
         cor5 = color(0, 0, 100);
         flight=false;
     }
     fill(100, 0, 100);
     ellipse(450,295,30,30);
-    if(dist(mouseX,mouseY,450,295)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,450,295)<15&&MouseRef.held('left')){
         cor5 = color(100, 0, 100);
         flight=false;
     }
     fill(50, 50, 50);
     ellipse(500,295,30,30);
-    if(dist(mouseX,mouseY,500,295)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,500,295)<15&&MouseRef.held('left')){
         cor5 = color(33, 33, 33);
         flight=false;
     }
     fill(0, 0, 0);
     ellipse(550,295,30,30);
-    if(dist(mouseX,mouseY,550,295)<15&&mouseIsPressed){
+    if(dist(mouseX,mouseY,550,295)<15&&MouseRef.held('left')){
         cor5 = color(0, 0, 0);
         flight=false;
     }
@@ -3143,7 +3398,7 @@ draw = function() {
         sy=0;
         }else{vertical=true;}
     block(0,400,600,10,8);
-    if(keys[DOWN]&&keys[17]&&Y>350&&X<50){
+    if(KeysRef.held('ArrowDown')&&keys[17]&&Y>350&&X<50){
         Y+=40;
     }
     block(0,796,600,10,8);
@@ -3343,7 +3598,7 @@ draw = function() {
         block(-10,-10,620,20,6);
         block(-10,390,620,20,6);
         block(590,-10,20,420,6);
-        for(var i = 0;i<100;i++){
+        for(let i = 0;i<100;i++){
             fill(i*5,i*5,i*5,i/5);
             noStroke();
             ellipse(300,200,i,i);
@@ -3352,7 +3607,7 @@ draw = function() {
         rotate(start_game_rotate_amoumt);
         strokeWeight(50);
         stroke(cor3,i/15);
-        for(var a = 0;a<36;a+=1){
+        for(let a = 0;a<36;a+=1){
         rotate(10);
         line(0,0,i*2,0);
         }
@@ -3366,7 +3621,7 @@ draw = function() {
         block(-10,390,620,20,8);
         pushMatrix();
         translate(0,0);
-        for(var i = 0;i<10000;i+=500){
+        for(let i = 0;i<10000;i+=500){
         fill(60, 60, 60);
         rect(i+cx,0,100,390);
         fill(69, 69, 69);
@@ -3470,7 +3725,7 @@ draw = function() {
          line(cx+700,0,cx+700,400);
          noStroke();
         
-        for(var b = 0;b<levels+1;b++){
+        for(let b = 0;b<levels+1;b++){
             var b1 = b*100;
             fill(0, 0, 0);
         ellipse(51+b1+cx,240,50,50);
@@ -4928,7 +5183,7 @@ bphone(73,341,4);
     line(450,0,450,400);
     line(500,0,500,400);
     line(550,0,550,400);
-    for(var i = 0;i<20;i++){
+    for(let i = 0;i<20;i++){
         line(303,i*20,600,i*20);
     }
     strokeWeight(1);
@@ -5475,19 +5730,19 @@ bphone(-324+movetime,300,4);
     
     
     }
-   if(keys[32]&&crown===5||supreme_mode&&keys[DOWN]){
+   if(keys[32]&&crown===5||supreme_mode&&KeysRef.held('ArrowDown')){
       px=X-10;
       py=Y+30-heightY;
    
    }
-   if(crown===5||supreme_mode&&keys[DOWN]){
+   if(crown===5||supreme_mode&&KeysRef.held('ArrowDown')){
    fill(cor3);
    noStroke();
    block(px,py,50,10,37);
    if(keys[8]){
        px=-100;
    }
-   if(keys[DOWN]&&Y>py-50&&Y<py&&X+30>px&&X<px+50){
+   if(KeysRef.held('ArrowDown')&&Y>py-50&&Y<py&&X+30>px&&X<px+50){
        sy+=3;
        py+=sy;
    }
@@ -5497,7 +5752,7 @@ bphone(-324+movetime,300,4);
         text("Tap to teleport",10,20);
     }
 if(crown === 11&&keys[32]||whoknows==="Chargy"||whoknows==="Eligamer123567"){
-for(var i = 35;i>1;i--){
+for(let i = 35;i>1;i--){
         stroke(0,100,255,i);
         if(whoknows==="Chargy"||whoknows==="Eligamer123567"){
         stroke(cor3,i);    
@@ -5558,7 +5813,7 @@ if(!incannon){
     }
     popMatrix();
     }else if(whoknows!=="AVG_FARMER"){
-        for(var i = 35;i>1;i--){
+        for(let i = 35;i>1;i--){
             fill(cor,i);
         noStroke();
         ellipse(X+15,Y+15,i,i);
@@ -5710,7 +5965,7 @@ noStroke();
     popMatrix();
     }
 }
-if(keys[DOWN]&&supreme_mode===true&&flight===false){
+if(KeysRef.held('ArrowDown')&&supreme_mode===true&&flight===false){
     noStroke();
     fill(0, 200, 255);
     rect(X-5,Y+30,40,3);
@@ -5771,7 +6026,7 @@ if(keys[32]&&crown===3){
         sx=0;
         fill(255, 255, 255);
         text("Tap to teleport",40,40);
-        if(mouseIsPressed){
+        if(MouseRef.held('left')){
             X=mouseX-15;
             Y=mouseY-15;
             teleporting=false;
@@ -5849,10 +6104,10 @@ if(keys[32]&&crown===3){
         rect(350,100,150,50);
         rect(100,200,150,50);
         rect(350,40,150,50);
-        if(mouseX>350&&mouseX<350+150&&mouseY>40&&mouseY<40+50&&mouseIsPressed){
+        if(mouseX>350&&mouseX<350+150&&mouseY>40&&mouseY<40+50&&MouseRef.held('left')){
             swichlvl('enter',-3);
         }
-        if(mouseX>100&&mouseX<100+150&&mouseY>200&&mouseY<200+50&&mouseIsPressed){
+        if(mouseX>100&&mouseX<100+150&&mouseY>200&&mouseY<200+50&&MouseRef.held('left')){
     saves[0] =levels_complete;
     saves[1] = supreme_levels_complete;
     saves[2]=crown;
@@ -5872,7 +6127,7 @@ if(keys[32]&&crown===3){
             println("save code: "+saves);
         }
         rect(350,200,150,50);
-        if(mouseX>350&&mouseX<350+150&&mouseY>200&&mouseY<200+50&&mouseIsPressed){
+        if(mouseX>350&&mouseX<350+150&&mouseY>200&&mouseY<200+50&&MouseRef.held('left')){
     levels_complete = saves[0];
     supreme_levels_complete = saves[1];
     crown = saves[2];
@@ -5888,19 +6143,19 @@ if(keys[32]&&crown===3){
     battery=saves[12];  
         }
         rect(100,300,150,50);
-        if(mouseX>100&&mouseX<100+150&&mouseY>300&&mouseY<300+50&&mouseIsPressed){
+        if(mouseX>100&&mouseX<100+150&&mouseY>300&&mouseY<300+50&&MouseRef.held('left')){
         if(t_complete===true||devmode===true){
         swichlvl('exit');
     }else{swichlvl('enter',0);}
         }
-        if(mouseX>350&&mouseX<350+150&&mouseY>300&&mouseY<300+50&&mouseIsPressed){
+        if(mouseX>350&&mouseX<350+150&&mouseY>300&&mouseY<300+50&&MouseRef.held('left')){
     settings_open=0;
 }  
-if(mouseX>350&&mouseX<350+150&&mouseY>100&&mouseY<100+50&&mouseIsPressed){
+if(mouseX>350&&mouseX<350+150&&mouseY>100&&mouseY<100+50&&MouseRef.held('left')){
 swichlvl('enter',"custom");
 devmode=true;
 }
-if(mouseX>100&&mouseX<100+150&&mouseY>100&&mouseY<100+50&&mouseIsPressed){
+if(mouseX>100&&mouseX<100+150&&mouseY>100&&mouseY<100+50&&MouseRef.held('left')){
 swichlvl('enter',-2);
 } 
         rect(350,300,150,50);
@@ -6003,45 +6258,22 @@ swichlvl('enter',-2);
 /***
 
 ***/
-mouseClicked = function(){
-    if(crown>=4&&keys[32]){
-        if(dist(mouseX,mouseY,X+15,Y+15)<100){
-        X=mouseX-15;Y=mouseY-15;
-        }
-    }
-if(crown===2){
-    if(mouseX<75&&mouseY<25){
-        frames+=10;
-    }
-    if(mouseX<75&&mouseY<50){
-        frames-=5;
-    }
-}
-if(mouseX>560&&mouseY<40&&settings_open===0){
-settings_open=1;
-}
-if(mouseButton === LEFT&&lvl===0&&mouseX>177&&mouseX<177+240&&mouseY>178&&mouseY<178+55&&settings_open===0){
-    levels_complete = saves[0];
-    supreme_levels_complete = saves[1];
-    crown = saves[2];
-    cx = saves[3];
-    deaths = saves[4];
-    t_complete = saves[5];
-    X=saves[6];
-    Y=saves[7];
-    heightY=saves[8];
-    lvl=saves[9];
-    flight=saves[10];
-    keyscollected=saves[11];
-    battery=saves[12];
-    swichlvl('enter',1);
-}
-if(settings_open&&mouseX<250&&mouseY<50){
-if(effects === "on"){
-effects="off";
-}else{
-effects = "on";
-}
-}
 
-};
+
+
+
+
+/** Break */
+
+
+
+// Runner
+let drawSignal = new Signal();
+drawSignal.connect(()=>{
+    draw();
+    if(MouseRef.pressed('left')) mouseClicked();
+    if(KeysRef.pressed('any')) {keyReleased();};
+    if(KeysRef.pressed('any')) {keyPressed();};
+})
+return drawSignal;
+}

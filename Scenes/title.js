@@ -6,9 +6,12 @@ import LoadingOverlay from '../js/UI/LoadingOverlay.js';
 import createHButton from '../js/htmlElements/createHButton.js';
 import createHDiv from '../js/htmlElements/createHDiv.js';
 import Timer from '../js/Timer.js';
-
+// Games!
 import { BlockDodger } from '../Game logic/BlockDodger.js';
 import { BlockDodger2 } from '../Game logic/BlockDodger2.js';
+import { Click } from '../Game logic/Click.js';
+import { Chargy } from '../Game logic/Chargy1.js';
+
 
 import { mainHeight } from '../settings.js';
 import { mainWidth } from '../settings.js';
@@ -450,7 +453,7 @@ export class TitleScene extends Scene {
     onReady() {
         this.twoPlayer = false;
         this.isReady = true;
-        this.createUI()
+        //this.createUI()
         this.createTimers()
         // Hide loading overlay now
 
@@ -463,7 +466,7 @@ export class TitleScene extends Scene {
         this._rssHandler = (state) => { this.applyRemoteState(state); };
         if (this.RSS && typeof this.RSS.connect === 'function') this.RSS.connect(this._rssHandler);
 
-        this.drawKhan = BlockDodger2(this.Draw,this.mouse, this.keys,this.sessionTimer);
+        this.drawKhan = Chargy(this.Draw,this.mouse, this.keys,this.sessionTimer);
     }
 
     /**

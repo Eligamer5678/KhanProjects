@@ -517,29 +517,90 @@ export default class Draw {
         
 
 
-    polygon(points, color = '#000000FF', width = 1, fill = false, erase = false) {
+    polygon(points, color = '#000000FF', fill = true, stroke = false, width = 1, strokeColor = null, erase = false) {
+        // Match rect/ellipse signature: polygon(points, color, fill, stroke, width, strokeColor, erase)
         width = this.ps(width);
         const ctx = this._assertCtx('polygon');
         if (!points || points.length < 2) return;
+        // Normalize points into pixel coords and compute bbox for gradient creation
+        const coords = [];
+        for (let i = 0; i < points.length; i++) {
+            const p = _asVec(points[i]);
+            coords.push({ x: this.px(p.x), y: this.py(p.y) });
+        }
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        for (const c of coords) {
+            if (c.x < minX) minX = c.x;
+            if (c.x > maxX) maxX = c.x;
+            if (c.y < minY) minY = c.y;
+            if (c.y > maxY) maxY = c.y;
+        }
+
         ctx.save();
         ctx.globalCompositeOperation = erase ? 'destination-out' : 'source-over';
-        const col = Color.convertColor(erase ? '#000000FF' : color);
+
+        // Determine if stroke was explicitly provided (positional) to preserve backwards compat
+        const strokeProvided = arguments.length >= 4; // points + color + fill + stroke => 4th arg is stroke
+
         ctx.beginPath();
-        const p0 = _asVec(points[0]);
-        ctx.moveTo(this.px(p0.x), this.py(p0.y));
-        for (let i = 1; i < points.length; i++) {
-            const p = _asVec(points[i]);
-            ctx.lineTo(this.px(p.x), this.py(p.y));
+        ctx.moveTo(coords[0].x, coords[0].y);
+        for (let i = 1; i < coords.length; i++) {
+            ctx.lineTo(coords[i].x, coords[i].y);
         }
         ctx.closePath();
-        if (fill) {
+
+        // --- FILL HANDLING ---
+        if (fill === true) {
+            // solid fill
+            const col = Color.convertColor(erase ? '#000000FF' : color);
             ctx.fillStyle = col.toHex();
             ctx.fill();
-        } else {
-            ctx.strokeStyle = col.toHex();
+        } else if (fill === 'gradient') {
+            if (!Array.isArray(color)) {
+                console.warn('polygon: gradient fill requires an array of colors');
+            } else if (minX === Infinity || maxX === -Infinity) {
+                const c0 = Color.convertColor(color[0]);
+                ctx.fillStyle = c0.toHex();
+                ctx.fill();
+            } else {
+                const grad = ctx.createLinearGradient(minX, (minY + maxY) / 2, maxX, (minY + maxY) / 2);
+                const stops = color.length;
+                color.forEach((c, i) => {
+                    const cc = Color.convertColor(c);
+                    grad.addColorStop(i / (stops - 1), cc.toHex());
+                });
+                ctx.fillStyle = grad;
+                ctx.fill();
+            }
+        } else if (fill === 'gradient-vertical') {
+            if (!Array.isArray(color)) {
+                console.warn('polygon: gradient-vertical fill requires an array of colors');
+            } else if (minY === Infinity || maxY === -Infinity) {
+                const c0 = Color.convertColor(color[0]);
+                ctx.fillStyle = c0.toHex();
+                ctx.fill();
+            } else {
+                const grad = ctx.createLinearGradient((minX + maxX) / 2, minY, (minX + maxX) / 2, maxY);
+                const stops = color.length;
+                color.forEach((c, i) => {
+                    const cc = Color.convertColor(c);
+                    grad.addColorStop(i / (stops - 1), cc.toHex());
+                });
+                ctx.fillStyle = grad;
+                ctx.fill();
+            }
+        }
+
+        // --- STROKE HANDLING ---
+        const doStroke = strokeProvided ? !!stroke : (fill === false);
+        if (doStroke) {
+            const strokeColRaw = strokeColor != null ? strokeColor : color;
+            const sc = Color.convertColor(erase ? '#000000FF' : strokeColRaw);
+            ctx.strokeStyle = sc.toHex();
             ctx.lineWidth = width;
             ctx.stroke();
         }
+
         ctx.restore();
     }
 
