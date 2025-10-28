@@ -7,6 +7,7 @@ export default class Vector {
     static encode(v) {
         return [v.x, v.y];
     }
+    get() { return new Vector(this.x, this.y); }
 
     // Decode an array [x, y] to a Vector
     static decode(arr) {

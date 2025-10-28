@@ -10,6 +10,8 @@ export default class Draw {
         // Stack depths (save/restore counts)
         this._matrixDepth = 0;
         this._maskDepth = 0;
+        // track transforms as an array of {type, data} entries for easier inspection
+        this._transforms = [];
         // Caches (for SVG, if you use them later)
         this.clipPaths = new Map();
         this.svgCache = new Map();
@@ -66,60 +68,204 @@ export default class Draw {
      * - rotate: data = number (radians) OR { angle, origin?: {x,y} }
      * - scale : data = number | {x,y}
      */
-    pushMatrix(data, transformType = 'offset') {
-        const ctx = this._assertCtx('pushMatrix');
-        ctx.save();
-
+    // Convenience wrapper: call one of the dedicated transform helpers.
+    // transformType: 'offset'|'translate'|'rotate'|'scale'
+    pushMatrix(data=new Vector(0,0), transformType = 'offset') {
         switch (transformType) {
-            case 'offset': {
-                const { x, y } = _asVec(data);
-                ctx.translate(x, y);
-                break;
-            }
-            case 'rotate': {
-                if (typeof data === 'number') {
-                    ctx.rotate(data);
-                } else {
-                    const angle = data.angle ?? 0;
-                    const origin = data.origin ? _asVec(data.origin) : null;
-                    if (origin) {
-                        ctx.translate(origin.x, origin.y);
-                        ctx.rotate(angle);
-                        ctx.translate(-origin.x, -origin.y);
-                    } else {
-                        ctx.rotate(angle);
-                    }
-                }
-                break;
-            }
-            case 'scale': {
-                if (typeof data === 'number') {
-                    ctx.scale(data, data);
-                } else {
-                    const { x, y } = _asVec(data);
-                    ctx.scale(x, y);
-                }
-                break;
-            }
+            case 'offset':
+            case 'translate':
+                return this.translate(data);
+            case 'rotate':
+                return this.rotate(data);
+            case 'scale':
+                return this.scale(data);
             default:
                 console.warn(`pushMatrix: unknown transformType "${transformType}"`);
+                return this;
         }
-
-        this._matrixDepth++;
     }
 
-    popMatrix(deep = true) {
+    // Apply a translation and push it to the transform stack
+    translate(data) {
+        const ctx = this._assertCtx('translate');
+        ctx.save();
+        const v = _asVec(data);
+        ctx.translate(this.px(v.x), this.py(v.y));
+        // Group transforms: add into the last group array or create a new group
+        const t = { type: 'translate', data: { x: v.x, y: v.y } };
+        if (!this._transforms.length || !Array.isArray(this._transforms[this._transforms.length - 1])) {
+            this._transforms.push([t]);
+        } else {
+            this._transforms[this._transforms.length - 1].push(t);
+        }
+        this._matrixDepth++;
+        return this;
+    }
+
+    // Apply rotation. Accepts either a number (radians) or { angle, origin }
+    rotate(data) {
+        const ctx = this._assertCtx('rotate');
+        ctx.save();
+        let rotEntry;
+        if (typeof data === 'number') {
+            ctx.rotate(data);
+            rotEntry = { type: 'rotate', data: { angle: data } };
+        } else {
+            const angle = data.angle ?? 0;
+            const origin = data.origin ? _asVec(data.origin) : null;
+            if (origin) {
+                ctx.translate(this.px(origin.x), this.py(origin.y));
+                ctx.rotate(angle);
+                ctx.translate(this.px(-origin.x), this.py(-origin.y));
+                rotEntry = { type: 'rotate', data: { angle, origin: { x: origin.x, y: origin.y } } };
+            } else {
+                ctx.rotate(angle);
+                rotEntry = { type: 'rotate', data: { angle } };
+            }
+        }
+        if (!this._transforms.length || !Array.isArray(this._transforms[this._transforms.length - 1])) {
+            this._transforms.push([rotEntry]);
+        } else {
+            this._transforms[this._transforms.length - 1].push(rotEntry);
+        }
+        this._matrixDepth++;
+        return this;
+    }
+
+    // Apply scaling. Accepts a number or {x,y}.
+    scale(data) {
+        const ctx = this._assertCtx('scale');
+        ctx.save();
+        let scaleEntry;
+        if (typeof data === 'number') {
+            ctx.scale(data, data);
+            scaleEntry = { type: 'scale', data: { x: data, y: data } };
+        } else {
+            const s = _asVec(data);
+            ctx.scale(s.x, s.y);
+            scaleEntry = { type: 'scale', data: { x: s.x, y: s.y } };
+        }
+        if (!this._transforms.length || !Array.isArray(this._transforms[this._transforms.length - 1])) {
+            this._transforms.push([scaleEntry]);
+        } else {
+            this._transforms[this._transforms.length - 1].push(scaleEntry);
+        }
+        this._matrixDepth++;
+        return this;
+    }
+
+    // Pop transforms. Signature: popMatrix(single = true, deep = false)
+    // - single=true : pop a single transform
+    // - single=false, deep=true : clear all transforms
+    popMatrix(single = true, deep = false) {
         const ctx = this._assertCtx('popMatrix');
 
-        if (deep) {
+        // Helper to safely restore once
+        const safeRestore = () => {
+            if (this._matrixDepth > 0) {
+                ctx.restore();
+                this._matrixDepth--;
+                return true;
+            }
+            return false;
+        };
+
+        if (deep && single === false) {
+            // clear everything
             while (this._matrixDepth > 0) {
                 ctx.restore();
                 this._matrixDepth--;
             }
-        } else if (this._matrixDepth > 0) {
-            ctx.restore();
-            this._matrixDepth--;
+            this._transforms = [];
+            return this;
         }
+
+        // Ensure we have at least one group
+        if (!this._transforms.length) return this;
+
+        const lastGroup = this._transforms[this._transforms.length - 1];
+
+        if (single === true && deep === true) {
+            // pop a single transform from the last group
+            if (Array.isArray(lastGroup)) {
+                if (lastGroup.length > 0) {
+                    safeRestore();
+                    lastGroup.pop();
+                    if (lastGroup.length === 0) this._transforms.pop();
+                }
+            } else {
+                // legacy single-entry - remove it
+                safeRestore();
+                this._transforms.pop();
+            }
+            return this;
+        }
+
+        // At this point: either (single===false && deep===false) OR (single===true && deep===true)
+        // Both behaviours should delete the last group entirely.
+        if (Array.isArray(lastGroup)) {
+            // restore for each transform in the group
+            for (let i = 0; i < lastGroup.length; i++) {
+                safeRestore();
+            }
+            this._transforms.pop();
+        } else {
+            // single entry
+            safeRestore();
+            this._transforms.pop();
+        }
+
+        return this;
+    }
+
+    arc(pos, size, startAngle, endAngle, color = '#000000FF', fill = true, stroke = false, width = 1, strokeColor = null, erase = false) {
+        pos = this.pv(pos.clone ? pos.clone() : new Vector(pos[0] ?? 0, pos[1] ?? 0));
+        size = this.pv(size.clone ? size.clone() : new Vector(size[0] ?? 0, size[1] ?? 0));
+        width = this.ps(width);
+        const ctx = this._assertCtx('arc');
+        const { x, y } = _asVec(pos);
+        const { x: w, y: h } = _asVec(size);
+        const rx = w / 2;
+        const ry = h / 2;
+
+        if (erase && color === null) {
+            ctx.clearRect(x - rx, y - ry, w, h);
+            return;
+        }
+
+        ctx.save();
+        ctx.globalCompositeOperation = erase ? 'destination-out' : 'source-over';
+
+        // Build path: move to center then draw arc (ellipse segment)
+        ctx.beginPath();
+        // Move to center so closing path will create a "pie" when filled
+        ctx.moveTo(x, y);
+
+        // For elliptical arcs, use ctx.ellipse with start/end angles
+        ctx.ellipse(x, y, rx, ry, 0, startAngle, endAngle);
+
+        // Close to center to form sector; if you only want open arc, set fill=false and stroke=true
+        ctx.closePath();
+
+        const col = Color.convertColor(erase ? '#000000FF' : color);
+        if (fill) {
+            ctx.globalAlpha = col.d;
+            ctx.fillStyle = col.toHex();
+            ctx.fill();
+        }
+
+        // stroke handling: if stroke === true (or for backwards compatibility)
+        const strokeProvided = arguments.length >= 7;
+        const doStroke = strokeProvided ? !!stroke : (fill === false);
+        if (doStroke) {
+            const strokeColRaw = (arguments.length >= 9 && strokeColor != null) ? strokeColor : color;
+            const sc = Color.convertColor(erase ? '#000000FF' : strokeColRaw);
+            ctx.strokeStyle = sc.toHex();
+            ctx.lineWidth = width;
+            ctx.stroke();
+        }
+
+        ctx.restore();
     }
 
     clear() {
@@ -342,13 +488,13 @@ export default class Draw {
                 grad.addColorStop(i / (stops - 1), col.toHex());
             });
             ctx.beginPath();
-            ctx.ellipse(x, y, this.ps(rx), this.ps(ry), 0, 0, Math.PI * 2);
+            ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
             ctx.fillStyle = grad;
             ctx.fill();
         } else {
             const col = Color.convertColor(erase ? '#000000FF' : color);
             ctx.beginPath();
-            ctx.ellipse(x, y, this.ps(rx), this.ps(ry), 0, 0, Math.PI * 2);
+            ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
             if (fill) {
                 ctx.globalAlpha = col.d;
                 ctx.fillStyle = col.toHex();
@@ -409,6 +555,10 @@ export default class Draw {
             fill = true,
             strokeWidth = width, // pass down our width param
             italics = false,
+            // box: optional Vector or [w,h] or {x,y} specifying bounding box for wrapping/clipping
+            box = null,
+            // wrap: 'word' (default) or 'char' - controls how long lines are broken
+            wrap = 'word',
         } = options;
         ctx.save();
         ctx.globalCompositeOperation = erase ? 'destination-out' : 'source-over';
@@ -418,14 +568,130 @@ export default class Draw {
         if (italics) fontStr = 'italic ' + fontStr;
         ctx.font = fontStr;
         ctx.textAlign = align;
-        ctx.textBaseline = baseline;
-        if (fill) {
-            ctx.fillStyle = col.toHex();
-            ctx.fillText(txt, pos.x, pos.y);
+        // Determine if we're drawing into a bounded box (wrap + clip)
+        let boxWidth = null;
+        let boxHeight = null;
+        if (box) {
+            const b = _asVec(box);
+            boxWidth = this.px(b.x);
+            boxHeight = this.py(b.y);
+        }
+
+        // If a box is provided and baseline wasn't explicitly set, use 'top' to make layout predictable
+        const usedBaseline = (options && options.baseline) ? baseline : (box ? 'top' : baseline);
+        ctx.textBaseline = usedBaseline;
+
+        if (boxWidth != null && !isNaN(boxWidth) && boxWidth > 0) {
+            // Wrap text into lines that fit boxWidth
+            const lines = [];
+            const paragraphs = String(txt).split('\n');
+            for (let p = 0; p < paragraphs.length; p++) {
+                if (wrap === 'char') {
+                    // Character-level wrapping: build lines by adding chars until width exceeded
+                    const paragraph = paragraphs[p];
+                    let cur = '';
+                    for (let ci = 0; ci < paragraph.length; ci++) {
+                        const ch = paragraph[ci];
+                        const test = cur + ch;
+                        const testWidth = ctx.measureText(test).width;
+                        if (testWidth <= boxWidth || cur.length === 0) {
+                            cur = test;
+                        } else {
+                            lines.push(cur);
+                            cur = ch;
+                        }
+                    }
+                    if (cur.length > 0) lines.push(cur);
+                } else {
+                    // Word-level wrapping (default)
+                    const words = paragraphs[p].split(/\s+/);
+                    let line = '';
+                    for (let i = 0; i < words.length; i++) {
+                        const word = words[i];
+                        const test = line.length ? line + ' ' + word : word;
+                        const testWidth = ctx.measureText(test).width;
+                        if (testWidth <= boxWidth || line.length === 0) {
+                            // fits (or line is empty) -> accept
+                            line = test;
+                        } else {
+                            // doesn't fit. If the single word itself is wider than box, break the word
+                            const wordWidth = ctx.measureText(word).width;
+                            if (wordWidth > boxWidth) {
+                                // break the word into chunks that fit
+                                let chunkStart = 0;
+                                while (chunkStart < word.length) {
+                                    let chunk = '';
+                                    for (let ci = chunkStart; ci < word.length; ci++) {
+                                        const testChunk = chunk + word[ci];
+                                        if (ctx.measureText(testChunk).width <= boxWidth) {
+                                            chunk = testChunk;
+                                        } else {
+                                            break;
+                                        }
+                                    }
+                                    // if nothing fits (very narrow box), force one char
+                                    if (chunk.length === 0) chunk = word[chunkStart];
+                                    // if current line has content, push it first
+                                    if (line.length > 0) {
+                                        lines.push(line);
+                                        line = '';
+                                    }
+                                    lines.push(chunk);
+                                    chunkStart += chunk.length;
+                                }
+                            } else {
+                                // word fits by itself but not when appended -> push current line and start new
+                                lines.push(line);
+                                line = word;
+                            }
+                        }
+                    }
+                    if (line.length > 0) lines.push(line);
+                }
+            }
+
+            // Compute line height (approximate using fontSize)
+            const lineHeight = fontSize * (options.lineHeight || 1.2);
+
+            // Optionally clip to boxHeight
+            let maxLines = lines.length;
+            if (boxHeight != null && !isNaN(boxHeight) && boxHeight > 0) {
+                maxLines = Math.floor(boxHeight / lineHeight);
+                if (maxLines < 0) maxLines = 0;
+            }
+
+            ctx.save();
+            if (boxHeight != null) {
+                // clip to bounding box
+                ctx.beginPath();
+                ctx.rect(pos.x, pos.y, boxWidth, boxHeight);
+                ctx.clip();
+            }
+
+            if (fill) {
+                ctx.fillStyle = col.toHex();
+                for (let i = 0; i < Math.min(lines.length, maxLines); i++) {
+                    ctx.fillText(lines[i], pos.x, pos.y + i * lineHeight);
+                }
+            } else {
+                ctx.strokeStyle = col.toHex();
+                ctx.lineWidth = strokeWidth;
+                for (let i = 0; i < Math.min(lines.length, maxLines); i++) {
+                    ctx.strokeText(lines[i], pos.x, pos.y + i * lineHeight);
+                }
+            }
+
+            ctx.restore();
         } else {
-            ctx.strokeStyle = col.toHex();
-            ctx.lineWidth = strokeWidth;
-            ctx.strokeText(txt, pos.x, pos.y);
+            ctx.textBaseline = usedBaseline;
+            if (fill) {
+                ctx.fillStyle = col.toHex();
+                ctx.fillText(txt, pos.x, pos.y);
+            } else {
+                ctx.strokeStyle = col.toHex();
+                ctx.lineWidth = strokeWidth;
+                ctx.strokeText(txt, pos.x, pos.y);
+            }
         }
         ctx.restore();
     }

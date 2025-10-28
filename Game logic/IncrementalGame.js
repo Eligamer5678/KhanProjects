@@ -1,20 +1,22 @@
 import Vector from '../js/Vector.js';
 import Signal from '../js/Signal.js';
-
-export function frameRate(rate){
-    // do nothing lol
-}
 import Color from '../js/Color.js';
-import Draw from '../js/Draw.js';
-function color(r,g,b,a=1){return new Color(r,g,b,a,'rgb');}
 
 
-export function IncrementalGame(DrawRef, MouseRef, KeysRef){
-// Khan-like functions
+
+export function IncrementalGame(DrawRef, MouseRef, KeysRef, sessionTimer){
+
+
+// Khan-like globals
 let globalfillColor = color(255,255,255,1,'rgb');
 let globalStrokeColor = color(0,0,0,'1','rgb');
 let globalStroke = 2;
 let globalTextSize = 12;
+
+function color(r,g,b,a=1){return new Color(r,g,b,a,'rgb');}
+function frameRate(rate){
+    // do nothing lol
+}
 function rect(x,y,w,h,r=0){
     if(r==0){
         DrawRef.rect(new Vector(x,y),new Vector(w,h), globalfillColor, true, true, globalStroke, globalStrokeColor);
@@ -43,6 +45,9 @@ function background(r,g,b,a=1){
 }
 function fill(r,g,b,a=1){
     globalfillColor = color(r,g,b,a,'rgb');
+}
+function millis(){
+    return sessionTimer.getTime()*1000;
 }
 function stroke(r,g,b,a=1){
     globalStrokeColor = color(r,g,b,a,'rgb');
@@ -468,12 +473,12 @@ function draw() {
     text("Upgrade",349,16);
     text("Click",349,32);
     for(let i =0; i<10000;i++){
-        if(mouseIsPressed&&mouseY<50&&mouseX>350&&click>100|click===100){
+        if(mouseIsPressed&&mouseY<50&&mouseX>350&&click>100||click===100){
             clicky+=1;
             click-=100;
         
         }
-        if(mouseIsPressed&&mouseY<50&&mouseX>350&&click>1000000000000|click===1000000000000000){
+        if(mouseIsPressed&&mouseY<50&&mouseX>350&&click>1000000000000||click===1000000000000000){
             clicky+=10000000000000000;
             click-=1000000000000;
             

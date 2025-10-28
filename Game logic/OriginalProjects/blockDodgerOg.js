@@ -1,5 +1,5 @@
  
- var dogespeed = 1;
+var dogespeed = 1;
 var dogespeed2 =2;
 var m = millis();
 var sscore = 1;

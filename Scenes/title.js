@@ -8,6 +8,10 @@ import createHDiv from '../js/htmlElements/createHDiv.js';
 import Timer from '../js/Timer.js';
 
 import { BlockDodger } from '../Game logic/BlockDodger.js';
+import { BlockDodger2 } from '../Game logic/BlockDodger2.js';
+
+import { mainHeight } from '../settings.js';
+import { mainWidth } from '../settings.js';
 
 export class TitleScene extends Scene {
     constructor(...args) {
@@ -459,7 +463,7 @@ export class TitleScene extends Scene {
         this._rssHandler = (state) => { this.applyRemoteState(state); };
         if (this.RSS && typeof this.RSS.connect === 'function') this.RSS.connect(this._rssHandler);
 
-        this.drawKhan = BlockDodger(this.Draw,this.mouse, this.keys,this.sessionTimer);
+        this.drawKhan = BlockDodger2(this.Draw,this.mouse, this.keys,this.sessionTimer);
     }
 
     /**
@@ -477,7 +481,6 @@ export class TitleScene extends Scene {
     updateTimers(delta){
         if (this.paused) return;
         this.sessionTimer.update(delta);
-        console.log('hola')
     }
 
     /** 
@@ -540,7 +543,7 @@ export class TitleScene extends Scene {
         try {
             const panelSize = new Vector(300, 130);
             const margin = 20;
-            const panelPos = new Vector(1920 - margin - panelSize.x, 1080 - margin - panelSize.y);
+            const panelPos = new Vector(mainWidth - margin - panelSize.x, mainHeight - margin - panelSize.y);
             const panel = createHDiv(
                 null,
                 panelPos,
@@ -587,6 +590,9 @@ export class TitleScene extends Scene {
         this.Draw.background('#FFFFFF')
 
         this.drawKhan.emit();
+
+
+        // Put test code below this line
 
         this.UIDraw.useCtx('overlays')
         this.UIDraw.clear()

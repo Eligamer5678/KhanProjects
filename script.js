@@ -27,9 +27,8 @@ import createHDiv from './js/htmlElements/createHDiv.js';
 import createHInput from './js/htmlElements/createHInput.js';
 import createHLabel from './js/htmlElements/createHLabel.js';
 
-
-const mainWidth = 1920;
-const mainheight = 1080;
+import { mainHeight } from './settings.js';
+import { mainWidth } from './settings.js';
 
 
 class Game {
@@ -536,12 +535,12 @@ class Program {
         // logical / pixel size of the game area
         this.size = new Vector(width, height);
 
-        // keep whatever scaling system you had (mainWidth/mainheight globals)
-        this.mouse.canvasScale.y = height / mainheight;
+        // keep whatever scaling system you had (mainWidth/mainHeight globals)
+        this.mouse.canvasScale.y = height / mainHeight;
         this.mouse.canvasScale.x = width / mainWidth;
-        this.Draw.Scale.y = height / mainheight;
+        this.Draw.Scale.y = height / mainHeight;
         this.Draw.Scale.x = width / mainWidth;
-        this.UIDraw.Scale.y = height / mainheight;
+        this.UIDraw.Scale.y = height / mainHeight;
         this.UIDraw.Scale.x = width / mainWidth;
 
         // compute the top-left position (in CSS pixels) where the canvas will sit

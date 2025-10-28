@@ -1,21 +1,19 @@
 import Vector from '../js/Vector.js';
 import Signal from '../js/Signal.js';
-
-export function frameRate(rate){
-    // do nothing lol
-}
 import Color from '../js/Color.js';
-import Draw from '../js/Draw.js';
-function color(r,g,b,a=1){return new Color(r,g,b,a,'rgb');}
 
 
 export function BlockDodger(DrawRef, MouseRef, KeysRef, sessionTimer){
-// Khan-like functions
-let globalfillColor = color(255,255,255,1,'rgb');
-let globalStrokeColor = color(0,0,0,'1','rgb');
-let globalStroke = 2;
-let globalTextSize = 12;
-
+    // Khan-like functions
+    let globalfillColor = color(255,255,255,1,'rgb');
+    let globalStrokeColor = color(0,0,0,'1','rgb');
+    let globalStroke = 2;
+    let globalTextSize = 12;
+    
+function frameRate(rate){
+    // do nothing lol
+}
+function color(r,g,b,a=1){return new Color(r,g,b,a,'rgb');}
 function rect(x,y,w,h,r=0){
     if(r==0){
         DrawRef.rect(new Vector(x,y),new Vector(w,h), globalfillColor, true, true, globalStroke, globalStrokeColor);
@@ -64,6 +62,9 @@ function textSize(size){
 }
 function round(num){
     return Math.round(num);
+}
+function noLoop(){
+    //do nothing
 }
 
 function mouseClicked(){} //dummy
@@ -276,6 +277,7 @@ let drawSignal = new Signal();
 drawSignal.connect(()=>{
     draw();
     if(MouseRef.pressed('left')) mouseClicked();
+    if(KeysRef.pressed('any')) keyReleased();
 })
 return drawSignal;
 }
