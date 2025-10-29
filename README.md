@@ -13,16 +13,16 @@ If you guys have any of your own that you would like to update, follow these ste
 - Now all the loops are updated.
 
 6. Fix key input
-Find and replace keyIsPressed/keyCode with KeysRef.held('key')
-If needed, KeysRef.pressed('key') is one frame
-Beware that syntax is different; UP/DOWN/LEFT/RIGHT = ArrowUp/Right/Down/Left, 32 = " "
-You will need to fix all the number based keycodes.
-49 = 1, 50=2, ect. Thats the code I remember.
+- Find and replace keyIsPressed/keyCode with KeysRef.held('key')
+- If needed, KeysRef.pressed('key') is one frame
+- Beware that syntax is different; UP/DOWN/LEFT/RIGHT = ArrowUp/Right/Down/Left, 32 = " "
+- You will need to fix all the number based keycodes.
+- 49 = 1, 50=2, ect. Thats the code I remember.
    
 7. Fix mouse input
-Find & replace mouseIsPressed with MouseRef.held('left') // or 'right' if it has MouseButton
-Replace MouseX with MouseRef.pos.x
-Replace MouseY with MouseRef.pos.y
+- Find & replace mouseIsPressed with MouseRef.held('left') // or 'right' if it has MouseButton
+- Replace MouseX with MouseRef.pos.x
+- Replace MouseY with MouseRef.pos.y
 
 8. Do any manual adjustment needed after, there may be missing functions you will need to add.
    
