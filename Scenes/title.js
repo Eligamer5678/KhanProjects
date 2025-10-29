@@ -469,7 +469,21 @@ export class TitleScene extends Scene {
         this._rssHandler = (state) => { this.applyRemoteState(state); };
         if (this.RSS && typeof this.RSS.connect === 'function') this.RSS.connect(this._rssHandler);
 
-        this.drawKhan = Chargy2(this.Draw,this.mouse, this.keys,this.sessionTimer);
+        // The game.
+        // Don't start any game immediately — show selector first.
+        this.drawKhan = null;
+        // Available games for selection (name + factory function)
+        this.games = [
+            { name: 'Chargy', fn: Chargy },
+            { name: 'Chargy2', fn: Chargy2 },
+            { name: 'Click', fn: Click },
+            { name: 'BlockDodger', fn: BlockDodger },
+            { name: 'BlockDodger2', fn: BlockDodger2 },
+            { name: 'IncrementalGame', fn: IncrementalGame },
+        ];
+        this.selectorIndex = 0;
+        this.showSelector = true;
+        this.selectedGame = null;
     }
 
     /**
@@ -504,6 +518,7 @@ export class TitleScene extends Scene {
         for (const elm of sortedElements) {
             elm.update(delta);
         }
+        this.tickControls(delta);
         while (this.tickAccumulator >= this.tickRate) {
             if(!this.paused){
                 this.tick();
@@ -516,6 +531,7 @@ export class TitleScene extends Scene {
     /**  
      * This engine uses ticks for multiplayer synchronization instead of frame by frame.
      * */
+    
     tick() {
         this.tickCount++;
         const tickDelta = this.tickRate / 1000; // convert ms -> seconds
@@ -523,6 +539,46 @@ export class TitleScene extends Scene {
 
         // Put true update logic here
 
+        
+
+    }
+    // Input requires per-frame checking
+    tickControls(delta){
+        // Selector input handling (arrow keys + space to select)
+        if (this.showSelector) {
+            try {
+                const len = this.games.length;
+                if (this.keys.pressed('ArrowUp') || this.keys.pressed('ArrowLeft')) {
+                    this.selectorIndex = ((this.selectorIndex - 1) % len + len) % len;
+                }
+                if (this.keys.pressed('ArrowDown') || this.keys.pressed('ArrowRight')) {
+                    this.selectorIndex = (this.selectorIndex + 1) % len;
+                }
+                // Space (single-space character) to choose
+                if (this.keys.pressed(' ')) {
+                    const g = this.games[this.selectorIndex];
+                    // instantiate the game's draw/emitter using the same signature used elsewhere
+                    this.drawKhan = g.fn(this.Draw, this.mouse, this.keys, this.sessionTimer);
+                    this.showSelector = false;
+                    this.selectedGame = g.name;
+                }
+            } catch (e) {
+                console.warn('Selector tick error', e);
+            }
+
+            // selection handled — don't proceed with other per-tick game logic
+            return;
+        }
+
+        // If a game is active, allow exiting back to the selector with Control+Escape
+        if (this.keys.comboPressed(['Control','Escape'])) {
+            // Stop the current game's draw emitter and show selector again
+            this.showSelector = true;
+            this.selectedGame = null;
+            try { this.UIDraw.clear(); } catch (e) { /* ignore */ }
+            try { this.Draw.clear(); } catch (e) { /* ignore */ }
+            this.drawKhan = null;
+        }
 
     }
 
@@ -595,8 +651,43 @@ export class TitleScene extends Scene {
         if(!this.isReady) return;
         this.Draw.background('#FFFFFF')
 
-        this.drawKhan.emit();
+        // If the selector UI is active, draw it; otherwise run the selected game's draw emitter.
+        if (this.showSelector) {
+            const center = new Vector(mainWidth / 2, mainHeight / 2);
+            const titleY = 120;
+            // Title
+            this.Draw.text('Select a game', new Vector(mainWidth / 2, titleY-50), '#000000FF', 1, 48, { align: 'center', baseline: 'middle' });
 
+            // Menu layout
+            const itemW = Math.min(900, mainWidth - 120);
+            const itemH = 56;
+            const gap = 14;
+            const total = this.games.length;
+            const startY = center.y - ((total * itemH + (total - 1) * gap) / 2) + itemH / 2;
+
+            for (let i = 0; i < total; i++) {
+                const y = startY + i * (itemH + gap);
+                const x = center.x - itemW / 2;
+                const isSel = (i === this.selectorIndex);
+                // Background box
+                const bgColor = isSel ? '#00AEEF66' : '#EEEEEEFF';
+                const strokeColor = isSel ? '#0077AAFF' : '#CCCCCCFF';
+                this.Draw.rect(new Vector(x, y - itemH / 2), new Vector(itemW, itemH), bgColor, true, true, 2, strokeColor);
+                // Game name
+                this.Draw.text(this.games[i].name, new Vector(center.x, y), '#000000FF', 1, 28, { align: 'center', baseline: 'middle' });
+                // Small indicator on left when selected
+                if (isSel) {
+                    this.Draw.text('▶', new Vector(x + 28, y), '#000000FF', 1, 22, { align: 'center', baseline: 'middle' });
+                }
+            }
+
+            // hint
+            this.Draw.text('Use Arrow keys to move, Space to select', new Vector(mainWidth / 2, mainHeight - 48), '#00000088', 1, 18, { align: 'center', baseline: 'middle' });
+        } else {
+            if (this.drawKhan !== null) {
+                try { this.drawKhan.emit(); } catch (e) { console.warn('drawKhan emit failed', e); }
+            }
+        }
 
         // Put test code below this line
 

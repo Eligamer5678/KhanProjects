@@ -3,6 +3,7 @@ import Signal from '../js/Signal.js';
 import Color from '../js/Color.js';
 import { mainHeight} from '../settings.js';
 import { mainWidth } from '../settings.js';
+import { whoKnows } from '../settings.js';
 
 class PVector extends Vector{
     constructor(x,y){
@@ -314,7 +315,7 @@ https://www.khanacademy.org/computer-programming/chargy/5878519500947456?width=6
 // Defult save is 0,0,0,0,0,0,89,36,0,0,false,0,0
 // My save is 26,0,11,0,0,true,353,160,0,'Map',false,0,0
 var saves = [0,0,0,0,0,0,89,36,0,0,false,0,0];
-var whoknows = "";
+var whoknows = whoKnows;
 var players = 1;
 /**
 UPDATE NEWS:
@@ -2928,19 +2929,19 @@ if(Y+sy<=y+heightY+h&&Y+30>=y+heightY+h&&X+29>x&&X+1<x+w){
 };
 var start_game_rotate_amoumt = 0;
 var Creater_power = function(){
-if(keys[65]){
+if(keys[65]){//c
     crown = 100;
 }
-if(keys[88]){
+if(keys[88]){//h
     crown = 200;
 }
-if(keys[67]){
+if(keys[67]){//a
     crown = 300;
 }
-if(keys[86]){
+if(keys[86]){//g
     crown = 400;
 }
-if(keys[66]){
+if(keys[66]){//y
     crown = 500;
 }
 if(KeysRef.held(" ")){
@@ -3420,32 +3421,32 @@ draw = function() {
     {
         if(devmode===true){
             t_complete=true;
-            if(keys[49]){
+            if(keys[1]){
                 flight=true;
             }
-            if(keys[50]){
+            if(keys[2]){
                 flight=false;
             }
-            if(keys[51]){
+            if(keys[3]){
                 colide=false;
                 
             }
-            if(keys[52]){
+            if(keys[4]){
                 colide=true;
                 
             }
-            if(keys[53]){
+            if(keys[5]){
                 sppppeeed3=true;
                 sppppeeed=0;
             }
-            if(keys[54]){
+            if(keys[6]){
                 sppppeeed3=false;
                 sppppeeed=0;
             }
-            if(keys[55]){
+            if(keys[7]){
                 ic=true;
             }
-            if(keys[56]){ic=false;}
+            if(keys[8]){ic=false;}
             if(keys[90]){
             cor2 = color(0,0,0);
             }
