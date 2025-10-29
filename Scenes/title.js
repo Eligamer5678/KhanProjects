@@ -7,10 +7,12 @@ import createHButton from '../js/htmlElements/createHButton.js';
 import createHDiv from '../js/htmlElements/createHDiv.js';
 import Timer from '../js/Timer.js';
 // Games!
+import incrementalGame from '../Game logic/incrementalGame.js';
 import { BlockDodger } from '../Game logic/BlockDodger.js';
 import { BlockDodger2 } from '../Game logic/BlockDodger2.js';
 import { Click } from '../Game logic/Click.js';
 import { Chargy } from '../Game logic/Chargy1.js';
+import { Chargy2 } from '../Game logic/Chargy2.js';
 
 
 import { mainHeight } from '../settings.js';
@@ -466,7 +468,7 @@ export class TitleScene extends Scene {
         this._rssHandler = (state) => { this.applyRemoteState(state); };
         if (this.RSS && typeof this.RSS.connect === 'function') this.RSS.connect(this._rssHandler);
 
-        this.drawKhan = Chargy(this.Draw,this.mouse, this.keys,this.sessionTimer);
+        this.drawKhan = Chargy2(this.Draw,this.mouse, this.keys,this.sessionTimer);
     }
 
     /**

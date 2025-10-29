@@ -1,10 +1,19 @@
 export default class Color {
     constructor(a, b, c, d = 1, type = 'hsv') {
+        if(a>255) a=255; // Clamp R or H
+        if(b>255) b=255; // Clamp G or S
+        if(c>255) c=255; // Clamp B or V
+        if(d>1) d=0.9999; // Clamp alpha to max 1
+        if(a<0) a=0;     // Clamp R or H
+        if(b<0) b=0;     // Clamp G or S
+        if(c<0) c=0;    // Clamp B or V
+        if(d<0) d=0;     // Clamp alpha to min 0
         this.a = a; // R or H
         this.b = b; // G or S
         this.c = c; // B or V
         this.d = d; // Alpha
         this.type = type; // 'rgb' or 'hsv'
+
     }
 
     toRgb(mutate = false) {
