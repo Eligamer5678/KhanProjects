@@ -8,9 +8,9 @@ If you guys have any of your own that you would like to update, follow these ste
 4. Paste your code between those lines.
    
 5. Fix for loops; replace for(var with for(let
-Press ctrl+f, search for for(var, click the dropdown arrow left of it, in the replace part, type for(let
-Hold enter.
-Now all the loops are updated.
+- Press ctrl+f, search for for(var, click the dropdown arrow left of it, in the replace part, type for(let
+- Hold enter.
+- Now all the loops are updated.
 
 6. Fix key input
 Find and replace keyIsPressed/keyCode with KeysRef.held('key')
