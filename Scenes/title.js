@@ -1,3 +1,4 @@
+
 import Scene from './Scene.js';
 import Vector from '../js/Vector.js';
 import SoundManager from '../js/SoundManager.js'
@@ -7,7 +8,7 @@ import createHButton from '../js/htmlElements/createHButton.js';
 import createHDiv from '../js/htmlElements/createHDiv.js';
 import Timer from '../js/Timer.js';
 // Games!
-import incrementalGame from '../Game logic/incrementalGame.js';
+import { IncrementalGame } from '../Game logic/IncrementalGame.js';
 import { BlockDodger } from '../Game logic/BlockDodger.js';
 import { BlockDodger2 } from '../Game logic/BlockDodger2.js';
 import { Click } from '../Game logic/Click.js';
